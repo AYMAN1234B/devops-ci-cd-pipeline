@@ -49,8 +49,15 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/devops-api:latest .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/devops-api:latest \
+                      -t ${{ secrets.DOCKER_USERNAME }}/devops-api:${{ github.sha }} .
 
       - name: Push Docker Image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/devops-api:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/devops-api:${{ github.sha }}
+
+      - name: Scan Docker Image
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/devops-api:latesti

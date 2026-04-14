@@ -1,0 +1,319 @@
+[33mcommit 3a26580825818fea1ba0bde38437ff77731fb320[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: AYMAN1234B <aymanbangi2@gmail.com>
+Date:   Wed Apr 15 01:14:00 2026 +0300
+
+    Fix Helm container port and deploy FastAPI to Kubernetes
+
+[1mdiff --git a/devops-api/.helmignore b/devops-api/.helmignore[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0e8a0eb[m
+[1m--- /dev/null[m
+[1m+++ b/devops-api/.helmignore[m
+[36m@@ -0,0 +1,23 @@[m
+[32m+[m[32m# Patterns to ignore when building packages.[m
+[32m+[m[32m# This supports shell glob matching, relative path matching, and[m
+[32m+[m[32m# negation (prefixed with !). Only one pattern per line.[m
+[32m+[m[32m.DS_Store[m
+[32m+[m[32m# Common VCS dirs[m
+[32m+[m[32m.git/[m
+[32m+[m[32m.gitignore[m
+[32m+[m[32m.bzr/[m
+[32m+[m[32m.bzrignore[m
+[32m+[m[32m.hg/[m
+[32m+[m[32m.hgignore[m
+[32m+[m[32m.svn/[m
+[32m+[m[32m# Common backup files[m
+[32m+[m[32m*.swp[m
+[32m+[m[32m*.bak[m
+[32m+[m[32m*.tmp[m
+[32m+[m[32m*.orig[m
+[32m+[m[32m*~[m
+[32m+[m[32m# Various IDEs[m
+[32m+[m[32m.project[m
+[32m+[m[32m.idea/[m
+[32m+[m[32m*.tmproj[m
+[32m+[m[32m.vscode/[m
+[1mdiff --git a/devops-api/Chart.yaml b/devops-api/Chart.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..4988ae0[m
+[1m--- /dev/null[m
+[1m+++ b/devops-api/Chart.yaml[m
+[36m@@ -0,0 +1,24 @@[m
+[32m+[m[32mapiVersion: v2[m
+[32m+[m[32mname: devops-api[m
+[32m+[m[32mdescription: A Helm chart for Kubernetes[m
+[32m+[m
+[32m+[m[32m# A chart can be either an 'application' or a 'library' chart.[m
+[32m+[m[32m#[m
+[32m+[m[32m# Application charts are a collection of templates that can be packaged into versioned archives[m
+[32m+[m[32m# to be deployed.[m
+[32m+[m[32m#[m
+[32m+[m[32m# Library charts provide useful utilities or functions for the chart developer. They're included as[m
+[32m+[m[32m# a dependency of application charts to inject those utilities and functions into the rendering[m
+[32m+[m[32m# pipeline. Library charts do not define any templates and therefore cannot be deployed.[m
+[32m+[m[32mtype: application[m
+[32m+[m
+[32m+[m[32m# This is the chart version. This version number should be incremented each time you make changes[m
+[32m+[m[32m# to the chart and its templates, including the app version.[m
+[32m+[m[32m# Versions are expected to follow Semantic Versioning (https://semver.org/)[m
+[32m+[m[32mversion: 0.1.0[m
+[32m+[m
+[32m+[m[32m# This is the version number of the application being deployed. This version number should be[m
+[32m+[m[32m# incremented each time you make changes to the application. Versions are not expected to[m
+[32m+[m[32m# follow Semantic Versioning. They should reflect the version the application is using.[m
+[32m+[m[32m# It is recommended to use it with quotes.[m
+[32m+[m[32mappVersion: "1.16.0"[m
+[1mdiff --git a/devops-api/templates/NOTES.txt b/devops-api/templates/NOTES.txt[m
+[1mnew file mode 100644[m
+[1mindex 0000000..73dc243[m
+[1m--- /dev/null[m
+[1m+++ b/devops-api/templates/NOTES.txt[m
+[36m@@ -0,0 +1,35 @@[m
+[32m+[m[32m1. Get the application URL by running these commands:[m
+[32m+[m[32m{{- if .Values.httpRoute.enabled }}[m
+[32m+[m[32m{{- if .Values.httpRoute.hostnames }}[m
+[32m+[m[32m    export APP_HOSTNAME={{ .Values.httpRoute.hostnames | first }}[m
+[32m+[m[32m{{- else }}[m
+[32m+[m[32m    export APP_HOSTNAME=$(kubectl get --namespace {{(first .Values.httpRoute.parentRefs).namespace | default .Release.Namespace }} gateway/{{ (first .Values.httpRoute.parentRefs).name }} -o jsonpath="{.spec.listeners[0].hostname}")[m
+[32m+[m[32m  {{- end }}[m
+[32m+[m[32m{{- if and .Values.httpRoute.rules (first .Values.httpRoute.rules).matches (first (first .Values.httpRoute.rules).matches).path.value }}[m
+[32m+[m[32m    echo "Visit http://$APP_HOSTNAME{{ (first (first .Values.httpRoute.rules).matches).path.value }} to use your application"[m
+[32m+[m
+[32m+[m[32m    NOTE: Your HTTPRoute depends on the listener configuration of your gateway and your HTTPRoute rules.[m
+[32m+[m[32m    The rules can be set for path, method, header and query parameters.[m
+[32m+[m[32m    You can check the gateway configuration with 'kubectl get --namespace {{(first .Values.httpRoute.parentRefs).namespace | default .Release.Namespace }} gateway/{{ (first .Values.httpRoute.parentRefs).name }} -o yaml'[m
+[32m+[m[32m{{- end }}[m
+[32m+[m[32m{{- else if .Values.ingress.enabled }}[m
+[32m+[m[32m{{- range $host := .Values.ingress.hosts }}[m
+[32m+[m[32m  {{- range .paths }}[m
+[32m+[m[32m  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}[m
+[32m+[m[32m  {{- end }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m[32m{{- else if contains "NodePort" .Values.service.type }}[m
+[32m+[m[32m  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "devops-api.fullname" . }})[m
+[32m+[m[32m  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")[m
+[32m+[m[32m  echo http://$NODE_IP:$NODE_PORT[m
+[32m+[m[32m{{- else if contains "LoadBalancer" .Values.service.type }}[m
+[32m+[m[32m     NOTE: It may take a few minutes for the LoadBalancer IP to be available.[m
+[32m+[m[32m           You can watch its status by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "devops-api.fullname" . }}'[m
+[32m+[m[32m  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "devops-api.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")[m
+[32m+[m[32m  echo http://$SERVICE_IP:{{ .Values.service.port }}[m
+[32m+[m[32m{{- else if contains "ClusterIP" .Values.service.type }}[m
+[32m+[m[32m  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "devops-api.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")[m
+[32m+[m[32m  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")[m
+[32m+[m[32m  echo "Visit http://127.0.0.1:8080 to use your application"[m
+[32m+[m[32m  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT[m
+[32m+[m[32m{{- end }}[m
+[1mdiff --git a/devops-api/templates/_helpers.tpl b/devops-api/templates/_helpers.tpl[m
+[1mnew file mode 100644[m
+[1mindex 0000000..4210055[m
+[1m--- /dev/null[m
+[1m+++ b/devops-api/templates/_helpers.tpl[m
+[36m@@ -0,0 +1,62 @@[m
+[32m+[m[32m{{/*[m
+[32m+[m[32mExpand the name of the chart.[m
+[32m+[m[32m*/}}[m
+[32m+[m[32m{{- define "devops-api.name" -}}[m
+[32m+[m[32m{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m
+[32m+[m[32m{{/*[m
+[32m+[m[32mCreate a default fully qualified app name.[m
+[32m+[m[32mWe truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).[m
+[32m+[m[32mIf release name contains chart name it will be used as a full name.[m
+[32m+[m[32m*/}}[m
+[32m+[m[32m{{- define "devops-api.fullname" -}}[m
+[32m+[m[32m{{- if .Values.fullnameOverride }}[m
+[32m+[m[32m{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}[m
+[32m+[m[32m{{- else }}[m
+[32m+[m[32m{{- $name := default .Chart.Name .Values.nameOverride }}[m
+[32m+[m[32m{{- if contains $name .Release.Name }}[m
+[32m+[m[32m{{- .Release.Name | trunc 63 | trimSuffix "-" }}[m
+[32m+[m[32m{{- else }}[m
+[32m+[m[32m{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m
+[32m+[m[32m{{/*[m
+[32m+[m[32mCreate chart name and version as used by the chart label.[m
+[32m+[m[32m*/}}[m
+[32m+[m[32m{{- define "devops-api.chart" -}}[m
+[32m+[m[32m{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m
+[32m+[m[32m{{/*[m
+[32m+[m[32mCommon labels[m
+[32m+[m[32m*/}}[m
+[32m+[m[32m{{- define "devops-api.labels" -}}[m
+[32m+[m[32mhelm.sh/chart: {{ include "devops-api.chart" . }}[m
+[32m+[m[32m{{ include "devops-api.selectorLabels" . }}[m
+[32m+[m[32m{{- if .Chart.AppVersion }}[m
+[32m+[m[32mapp.kubernetes.io/version: {{ .Chart.AppVersion | quote }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m[32mapp.kubernetes.io/managed-by: {{ .Release.Service }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m
+[32m+[m[32m{{/*[m
+[32m+[m[32mSelector labels[m
+[32m+[m[32m*/}}[m
+[32m+[m[32m{{- define "devops-api.selectorLabels" -}}[m
+[32m+[m[32mapp.kubernetes.io/name: {{ include "devops-api.name" . }}[m
+[32m+[m[32mapp.kubernetes.io/instance: {{ .Release.Name }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m
+[32m+[m[32m{{/*[m
+[32m+[m[32mCreate the name of the service account to use[m
+[32m+[m[32m*/}}[m
+[32m+[m[32m{{- define "devops-api.serviceAccountName" -}}[m
+[32m+[m[32m{{- if .Values.serviceAccount.create }}[m
+[32m+[m[32m{{- default (include "devops-api.fullname" .) .Values.serviceAccount.name }}[m
+[32m+[m[32m{{- else }}[m
+[32m+[m[32m{{- default "default" .Values.serviceAccount.name }}[m
+[32m+[m[32m{{- end }}[m
+[32m+[m[32m{{- end }}[m
+[1mdiff --git a/devops-api/templates/deployment.yaml b/devops-api/templates/deployment.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..8d5c66c[m
+[1m--- /dev/null[m
+[1m+++ b/devops-api/templates/deployment.yaml[m
+[36m@@ -0,0 +1,78 @@[m
+[32m+[m[32mapiVersion: apps/v1[m
+[32m+[m[32mkind: Deployment[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ include "devops-api.fullname" . }}[m
+[32m+[m[32m  labels:[m
+[32m+[m[32m    {{- include "devops-api.labels" . | nindent 4 }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  {{- if not .Values.autoscaling.enabled }}[m
+[32m+[m[32m  replicas: {{ .Values.replicaCount }}[m
+[32m+[m[32m  {{- end }}[m
+[32m+[m[32m  selector:[m
+[32m+[m[32m    matchLabels:[m
+[32m+[m[32m      {{- include "devops-api.selectorLabels" . | nindent 6 }}[m
+[32m+[m[32m  template:[m
+[32m+[m[32m    metadata:[m
+[32m+[m[32m      {{- with .Values.podAnnotations }}[m
+[32m+[m[32m      annotations:[m
+[32m+[m[32m        {{- toYaml . | nindent 8 }}[m
+[32m+[m[32m      {{- end }}[m
+[32m+[m[32m      labels:[m
+[32m+[m[32m        {{- include "devops-api.labels" . | nindent 8 }}[m
+[32m+[m[32m        {{- with .Values.podLabels }}[m
+[32m+[m[32m        {{- toYaml . | nindent 8 }}[m
+[32m+[m[32m        {{- end }}[m
+[32m+[m[32m    spec:[m
+[32m+[m[32m      {{- with .Values.imagePullSecrets }}[m
+[32m+[m[32m      imagePullSecrets:[m
+[32m+[m[32m        {{- toYaml . | nindent 8 }}[m
+[32m+[m[32m      {{- end }}[m
+[32m+[m[32m      serviceAccountName: {{ include "devops-api.serviceAccountName" . }}[m
+[32m+[m[32m      {{- with .Values.podSecurityContext }}[m
+[32m+[m[32m      securityContext:[m
+[32m+[m[32m        {{- toYaml . | nindent 8 }}[m
+[32m+[m[32m      {{- end }}[m
+[32m+[m[32m      containers:[m
+[32m+[m[32m        - name: {{ .Chart.Name }}[m
+[32m+[m[32m          {{- with .Values.securityContext }}[m
+[32m+[m[32m          securityContext:[m
+[32m+[m[32m            {{- toYaml . | nindent 12 }}[m
+[32m+[m[32m          {{- end }}[m
+[32m+[m[32m          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"[m
+[32m+[m[32m          imagePullPolicy: {{ .Values.image.pullPolicy }}[m
+[32m+[m[32m          ports:[m
+[32m+[m[32m            - name: http[m
+[32m+[m[32m              containerPort: {{ .Values.containerPort }}[m
+[32m+[m[32m              protocol: TCP[m
+[32m+[m[32m          {{- with .Values.livenessProbe }}[m
+[32m+[m[32m          livenessProbe:[m
+[32m+[m[32m            {{- toYaml . | nindent 12 }}[m
+[32m+[m[32m          {{- end }}[m
+[32m+[m[32m          {{- with .Values.readinessProbe }}[m
+[32m+[m[32m          readinessProbe:[m
+[32m+[m[32m            {{- toYaml . | nindent 12 }}[m
+[32m+[m[32m          {{- end }}[m
+[32m+[m[32m          {{- with .Values.resources }}[m
+[32m+[m[32m          resources:[m
+[32m+[m[32m            {{- toYaml . | nindent 12 }}[m
+[32m+[m[32m          {{- end }}[m
+[32m+[m[32m          {{- with .Values.volumeMounts }}[m
+[32m+[m[32m          volumeMounts:[m
+[32m+[m[32m            {{- toYaml . | nindent 12 }}[m
+[32m+[m[32m          {{- end }}[m
+[32m+[m[32m      {{- with .Values.volumes }}[m
+[32m+[m[32m      volumes:[m
+[32m+[m[32m        {{- toYaml . | nindent 8 }}[m
+[32m+[m[32m      {{- end }}[m
+[32m+[m[32m      {{- with .Values.nodeSelector }}[m
+[32m+[m[32m      nodeSelector:[m
+[32m+[m[32m        {{- toYaml . | nindent 8 }}[m
+[32m+[m[32m      {{- end }}[m
+[32m+[m[32m      {{- with .Values.affinity }}[m
+[32m+[m[32m      affinity:[m
+[32m+[m[32m        {{- toYaml . | nindent 8 }}[m
+[32m+[m[32m      {{- end }}[m
+[32m+[m[32m      {{- with .Values.tolerations }}[m
+[32m+[m[32m      tolerations:[m
+[32m+[m[32m        {{- toYaml . | nindent 8 }}[m
+[32m+[m[32m      {{- end }}[m
+[1mdiff --git a/devops-api/templates/hpa.yaml b/devops-api/templates/hpa.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..1ee09e9[m
+[1m--- /dev/null[m
+[1m+++ b/devops-api/templates/hpa.yaml[m
+[36m@@ -0,0 +1,32 @@[m
+[32m+[m[32m{{- if .Values.autoscaling.enabled }}[m
+[32m+[m[32mapiVersion: autoscaling/v2[m
+[32m+[m[32mkind: HorizontalPodAutoscaler[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ include "devops-api.fullname" . }}[m
+[32m+[m[32m  labels:[m
+[32m+[m[32m    {{- include "devops-api.labels" . | nindent 4 }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  scaleTargetRef:[m
+[32m+[m[32m    apiVersion: apps/v1[m
+[32m+[m[32m    kind: Deployment[m
+[32m+[m[32m    name: {{ include "devops-api.fullname" . }}[m
+[32m+[m[32m  minReplicas: {{ .Values.autoscaling.minReplicas }}[m
+[32m+[m[32m  maxReplicas: {{ .Values.autoscaling.maxReplicas }}[m
+[32m+[m[32m  metrics:[m
+[32m+[m[32m    {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}[m
+[32m+[m[32m    - type: Resource[m
+[32m+[m[32m      resource:[m
+[32m+[m[32m        name: cpu[m
+[32m+[m[32m        target:[m
+[32m+[m[32m          type: Utilization[m
+[32m+[m[32m          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}[m
+[32m+[m[32m    {{- end }}[m
+[32m+[m[32m    {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}[m
+[32m+[m[32m    - type: Resource[m
+[32m+[m[32m      resource:[m
+[32m+[m[32m        name: memory[m
+[32m+[m[32m        target:[m
+[32m+[m[32m          type: Utilization[m
+[32m+[m[32m          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}[m
+[32m+[m[32m    {{- end }}[m
+[32m+[m[32m{{- end }}[m
+[1mdiff --git a/devops-api/templates/httproute.yaml b/devops-api/templates/httproute.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..208adb9[m
+[1m--- /dev/null[m
+[1m+++ b/devops-api/templates/httproute.yaml[m
+[36m@@ -0,0 +1,38 @@[m
+[32m+[m[32m{{- if .Values.httpRoute.enabled -}}[m
+[32m+[m[32m{{- $fullName := include "devops-api.fullname" . -}}[m
+[32m+[m[32m{{- $svcPort := .Values.service.port -}}[m
+[32m+[m[32mapiVersion: gateway.networking.k8s.io/v1[m
+[32m+[m[32mkind: HTTPRoute[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ $fullName }}[m
+[32m+[m[32m  labels:[m
+[32m+[m[32m    {{- include "devops-api.labels" . | nindent 4 }}[m
+[32m+[m[32m  {{- with .Values.httpRoute.annotations }}[m
+[32m+[m[32m  annotations:[m
+[32m+[m[32m    {{- toYaml . | nindent 4 }}[m
+[32m+[m[32m  {{- end }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  parentRefs:[m
+[32m+[m[32m    {{- with .Values.httpRoute.parentRefs }}[m
+[32m+

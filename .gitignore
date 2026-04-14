@@ -1,0 +1,21 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# Kubernetes configs
+kubeconfig
+
+# Secrets
+tokens
+passwords
+
+# OS / misc
+.DS_Store
+*.log
+
+*.exe
+minikube*
